@@ -28,23 +28,23 @@ void setup() {
   tft.fillScreen(TFT_BLACK);
   SPIFFS.begin();
   root = SPIFFS.open("/");
+  tft.startWrite(); //startWrite() is only necessary if you use DMA transfer
 }
 
 void loop() {
   bool isDir = true;
   String fname = root.getNextFileName(&isDir);
-  if (!isDir && fname != NULL) {
-    Serial.print("slideshow next: ");
-    Serial.println(fname);
+
+  if (fname != NULL && !isDir) {
+    //Serial.println(fname);
     loadBitMap(fname);
-    delay(5000);
+    delay(2000);
   }
   else {
-    Serial.println("restarting slideshow");
+    //Serial.println("This is a very naive way of restarting the slide show")
     root.close();
     root = SPIFFS.open("/");
   }
-
 
 }
 
@@ -63,11 +63,13 @@ void loadBitMap(String name)
   //Serial.println(offset);
   //so, ignore everything until offset:
   bmp.seek(offset);
-
   bmp.read(buffer, 2*DWIDTH*DHEIGHT);
-  tft.setSwapBytes(true); //little-endian vs big-endian
-  tft.pushImage(0, 0, DWIDTH, DHEIGHT, (uint16_t*) buffer);
-
   bmp.close();
+
+  tft.setSwapBytes(true); //little-endian vs big-endian
+  tft.pushImageDMA(0, 0, DWIDTH, DHEIGHT, (uint16_t*) buffer);
+  //tft.endWrite(); //will block as long as DMA transfer is not ready
+
+
 
 }
